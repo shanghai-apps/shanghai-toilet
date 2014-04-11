@@ -1,0 +1,60 @@
+{% extends "mainapp/base.html"%}
+{% block title %}{{page.title}}: {% endblock %}
+{% block description %}{{page.snippet}}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{page.title}}</h1>
+</div>
+<div class="row">
+    <div class="col-md-9 page-body">
+    {% if page['display_time'] %}
+    <p style="margin-top:-10px;">(<span class="display_time_local">{{page['display_time']}}</span>)</p>
+    {% endif %}
+    {% if page['tags'] %}
+        {% for tag in page['tags'] %}
+        <a class="label label-default" href="{{url_for('mainapp/search_by_tag',tag_name=tag)}}">{{tag}}</a>
+        {% endfor %}
+    {% endif %}
+    {{page.content|safe}}
+    </div>
+    <div class="col-md-3">
+        <div class="well sidebar-nav">
+            <ul class="nav nav-list">
+                <li class="nav-header">{{sidebar['sidebar_title']}}</li>
+                {% for sl in sidebar['sidebar_list'] %}
+                <li><a href="{{sl['url']}}">{{sl['title']}}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+<!-- Modal -->
+<div id="largeImageModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h3 id="largeImageModelHeader" class="modal-title"></h3>
+            </div>
+            <div class="modal-body" id="largeImageModelBody">
+            </div>
+            <div class="modal-footer">
+                <button class="btn" data-dismiss="modal" aria-hidden="true">{{_('Close')}}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+$('div.page-body img').on('click',function(){
+    var imageTitle = $(this).attr('alt');
+    var imageSrc = $(this).attr('src');
+    imageSrc = imageSrc.replace(/=s[0-9]+/,'');
+    $('#largeImageModelHeader').html(imageTitle);
+    $('#largeImageModelBody').html('<img src="'+imageSrc+'">');
+    $('#largeImageModal').modal();
+});
+
+</script>
+{% endblock %}

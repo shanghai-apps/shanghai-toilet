@@ -1,0 +1,43 @@
+{% extends "mainapp/base.html"%}
+{% block title %}{{_('Admin Page')}}{% endblock %}
+{% block description %}{% endblock %}
+{% block content %}
+<!-- Main hero unit for a primary marketing message or call to action -->
+<div class="jumbotron">
+    <h1>{{_('Admin Page')}}</h1>
+    <p>{{_('index of admin pages')}}</p>
+</div>
+
+<!-- row of columns -->
+<div class="row">
+    <div class="col-md-9" id="flushMemcacheAllMessage"></div>
+    <div class="col-md-9" style="padding-bottom:1em;"><button class="btn btn-lg btn-danger btn-block" type="button" id="flushMemcacheAll">{{_('Flush All Memcache')}}</button></div>
+</div>
+<div class="row">
+    {% for a in admin_page_list %}
+    <div class="col-md-4">
+        <h2>{{a['title']}}</h2>
+        <p>{{a['info']}}</p>
+        <p><a class="btn btn-default" href="{{a['url']}}">{{_('Go')}}&raquo;</a></p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $('#flushMemcacheAll').on('click',function(){
+            $.ajax({
+                type:"GET",
+                url:"{{url_for('adminapp/flush_memcache')}}",
+                success: function(data){
+                    var callBackContent = '<div class="alert alert-success"><button type="button" class="close" data-dismiss="alert">&times;</button>';
+                    callBackContent += data + '</div>';
+                    $('#flushMemcacheAllMessage').html(callBackContent);
+                }
+            });
+        });
+    });
+
+</script>
+{% endblock %}

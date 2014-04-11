@@ -1,0 +1,164 @@
+{% extends "mainapp/base.html"%}
+{% block title %}{{ title }}{% endblock %}
+{% block description %}{% endblock %}
+{% block content %}
+<h1>{{title}}</h1>
+<div id="main">
+    <div>
+        <h3>{{_('Select image files from local computer')}}</h3>
+        <input id="imageuploadform" type="file" multiple="multiple" />
+    </div>
+    <div>
+        <h3>{{_('Or drop image files')}}</h3>
+        <div id="imagetarget" draggable="true" style="width:320px;border:3px dotted;text-align:center;padding:60px 0;">
+            <span>{{_('Drop here')}}</span>
+        </div>
+    </div>
+
+    <div>
+        <h3>{{_('Image List')}}</h3>
+        <div id="pagination">
+        </div>
+        <table class="table" id="images">
+        </table>
+    </div>
+</div>
+<!-- Modal -->
+<div id="largeImageModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="largeImageModalLabel" aria-hidden="true">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+        <h3 id="myModalLabel">{{_('Large Image')}}</h3>
+    </div>
+    <div class="modal-body" id="largeImageModalBody">
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+//thanks to http://shiba-yan.hatenablog.jp/entry/20110702/1309532938
+    var uploadFiles = function (files) {
+        var fd = new FormData();
+        for (var i = 0; i < files.length; i++) {
+            fd.append("files", files[i]);
+        }
+        $.getJSON('/admin/image/upload/url/', function (result) {
+            var upload_url = result;
+            $('#imagetarget').html('<p>{{_('uploading...')}}</p><img src="/media/img/ajax-loader.gif">');
+            $.ajax({
+                url: upload_url,
+                type: "POST",
+                data: fd,
+                processData: false,
+                contentType: false,
+                success:function(uploadresult){
+                    $('#imagetarget').html('<span>{{_('Drop here')}}</span>');
+                    setTimeout( function() {showImageList(1);}, 1000);
+                }
+            });
+        });
+    };
+
+    $("#imageuploadform").on("change", function () {
+        var files = this.files;
+        uploadFiles(files);
+    });
+
+    $("#imagetarget").on("dragover", function () {
+        return false;
+    })
+    .on("dragenter", function () {
+        return false;
+    })
+    .on("drop", function (e) {
+        var files = e.originalEvent.dataTransfer.files;
+        uploadFiles(files);
+        e.preventDefault();
+        return false;
+    });
+    function showImageList(page){
+        $('#images').html('');
+        $.getJSON('/admin/image/list/json/?page='+page, function (result) {
+            var pages = result.total_pages;
+            var current_page = result.current_page;
+            var pagination_html ='<div><ul class="pagination">';
+            for(var p=1;p<=pages;p++){
+                //write pagination logic here
+                if(p == page){var li_class='active';}else{var li_class=''}
+                pagination_html += '<li class="'+li_class+'"><a href="javascript:void(0);" class="imagepagination">'+p+'</a></li>';
+            }
+            pagination_html +='</ul>';
+            $('#pagination').html(pagination_html);
+            var uploaded_images = result.images;
+            for(var i =0; i < uploaded_images.length; i++){
+                var temp_html = '<tr id="'+uploaded_images[i].key+'">';
+                var temp_title,temp_note;
+                temp_html += '<td class="span4" style="padding-top:1.5em;"><img src="'+uploaded_images[i].image_path+'=s320" class="middlethumbnail"></td>';
+                if(uploaded_images[i].title == ''){temp_title = '[{{_('Edit Title')}}]';}else{temp_title = uploaded_images[i].title;}
+                temp_html += '<td class="span7">';
+                temp_html += '<h4 class="image_title" contenteditable=true>'+temp_title+'</h4>';
+                if(uploaded_images[i].note == ''){temp_note = '[{{_('Edit Note')}}]';}else{temp_note = uploaded_images[i].note;}
+                temp_html += '<p  class="image_note" contenteditable=true>'+temp_note+'</p>';
+                temp_html += '<span><small>{{_('File Name')}}:'+uploaded_images[i].file_name+'</small></span><br/>';
+                temp_html += '<span><small>{{_('Update')}}:'+uploaded_images[i].update+'</small></span>';
+                temp_html += '</td>';
+                temp_html += '<td class="span1"><button class="deleteimage btn btn-danger">{{_('Delete')}}</button></td>';
+                temp_html += '</tr>';
+                $('#images').append(temp_html);
+            }
+        });
+    }
+    $(document).on('focus','[contenteditable]',function() {
+        console.log('focused');
+        var this_text = $(this).text();
+        if((this_text == '[{{_('Edit Title')}}]')||(this_text == '[{{_('Edit Note')}}]')){
+            $(this).empty();
+        }
+    }).on('blur','[contenteditable]', function() {
+        console.log('unfocused');
+        var content_name = $(this).attr('class');
+        //console.log($(this).closest('tr').attr('id'));
+        var content_key = $(this).closest('tr').attr('id');
+        var content_text = $(this).text();
+        if(content_name == 'image_title'){var json_data = {'title':content_text};}else{var json_data = {'note':content_text};}
+        $.ajax({
+            type: "POST",
+            url: "/admin/rest/BlobStoreImage/"+content_key,
+            dataType: "json",
+            contentType: "application/json",
+            data: JSON.stringify({"BlobStoreImage": json_data}),
+            success: function(data) {
+                console.log('update finished');
+            }
+        });
+    });
+    $(document).on('click','button.deleteimage',function () {
+        if(!(window.confirm('{{_('Delete this image?')}}'))){return false;}
+        console.log('delete clicked');
+        var content_key = $(this).closest('tr').attr('id');
+        $.ajax({
+            type: "GET",
+            url: "/admin/image/delete/"+content_key,
+            success: function(data) {
+                console.log('update finished');
+                $('#'+content_key).remove();
+            }
+        });
+    });
+    $(document).on('click','a.imagepagination',function(){
+        var page = $(this).text();
+        showImageList(page);
+    });
+    $(document).on('click','img.middlethumbnail',function(){
+        var image_source = $(this).attr('src');
+        image_source = image_source.replace(/=s320/,'');
+        $('#largeImageModalBody').html('<img src='+image_source+'>');
+        $('#largeImageModal').modal();
+    });
+    $(document).ready(function(){
+        showImageList(1);
+    });
+</script>
+{% endblock %}

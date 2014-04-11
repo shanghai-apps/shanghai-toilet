@@ -1,0 +1,314 @@
+{% extends "mainapp/base.html"%}
+{% block title %}{{ title }}{% endblock %}
+{% block description %}{% endblock %}
+{% block content %}
+<h1>{{ title }}</h1>
+<div id="main">
+    <div id="modelName" style="display:none;">{{model}}</div>
+    <div id="entityKey" style="display:none;"></div>
+    <ul class="nav nav-tabs" id="langTab">
+        <li class="active"><a href="#{{default_lang['code']}}Tab" data-toggle="tab">{{default_lang['name']}}</a></li>
+        <li id="addTranslationNode"><a id="addTranslation"><span class="glyphicon glyphicon-plus"></span></a></li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane active" id="{{default_lang['code']}}Tab">
+            {% call form(class_='form-horizontal',role='form') %}
+            {% for f in form %}
+            <div class="form-group">
+                {{ form[f.name].label(class_='col-lg-2 control-label')|safe }}
+                <div class="col-lg-10">
+                {% if f.name == 'display_time' %}
+                {{ form[f.name].render(class_='form_datetime')|safe }}
+                {% else %}
+                {{ form[f.name].render(class_='form-control')|safe }}
+                {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            <div class="form-actions">
+                <button class="btn btn-lg btn-block btn-primary" type="submit">{{_('Save')}}</button>
+                {#{{ form.default_actions()|safe }}#}
+            </div>
+            {% endcall %}
+        </div>
+    </div>
+</div>
+<!-- Modal -->
+<div id="imageInsertModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="imageInsertModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                <h3 id="imageInsertModalLabel" class="modal-title">{{_('Image Insert')}}</h3>
+            </div>
+            <div class="modal-body">
+                <p>{{_('Select Images')}}</p>
+                <div id="pagination"></div> 
+                <div class="row" id="images">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div style="display:none;" id="imageinserttarget"></div>
+                <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">{{_('Close')}}</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="previewModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                <h3 id="previewModalLabel" class="modal-title">{{_('Preview')}}</h3>
+            </div>
+            <div class="modal-body" id="previewModalBody">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">{{_('Close')}}</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="addTranslationModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="addTranslationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                <h3 id="addTranslationModalLabel" class="modal-title">{{_('Add Translation')}}</h3>
+            </div>
+            <div class="modal-body">
+                <p>{{_('Select Language')}}</p>
+                <select id="langList" class="form-control">
+                    {% for lang in lang_list %}
+                    {% if lang['code'] != default_lang['code'] %}
+                    <option value="{{lang['code']}}">{{lang['name']}}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+                <p>
+                <a id="addTranslationTab" class="btn btn-primary">{{_('Add Translation')}}</a>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">{{_('Close')}}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<link href="/media/css/datetimepicker.css" rel="stylesheet">
+<script src="/media/js/bootstrap-datetimepicker.js"></script>
+<script src="/media/js/marked.js"></script>
+<script src="/media/js/expanding.js"></script>
+<script type="text/javascript">
+    $.fn.extend({
+        insertAtCaret: function(myValue){
+            return this.each(function(i) {
+                if (document.selection) {
+                    //For browsers like Internet Explorer
+                    this.focus();
+                    sel = document.selection.createRange();
+                    sel.text = myValue;
+                    this.focus();
+                }
+                else if (this.selectionStart || this.selectionStart == '0') {
+                    //For browsers like Firefox and Webkit based
+                    var startPos = this.selectionStart;
+                    var endPos = this.selectionEnd;
+                    var scrollTop = this.scrollTop;
+                    this.value = this.value.substring(0, startPos)+myValue+this.value.substring(endPos,this.value.length);
+                    this.focus();
+                    this.selectionStart = startPos + myValue.length;
+                    this.selectionEnd = startPos + myValue.length;
+                    this.scrollTop = scrollTop;
+                } else {
+                    this.value += myValue;
+                    this.focus();
+                }
+            })
+        }
+    });
+    $('textarea').each(function(i,elem){
+        var insertHTML = '<a class="insertimage btn btn-default btn-sm"><span class="glyphicon glyphicon-picture"></span>{{_('Insert Image')}}</a>';
+        insertHTML += '<a class="preview btn btn-info btn-sm"><span class="glyphicon glyphicon-play"></span>{{_('Preview')}}</a>';
+        elem.insertAdjacentHTML('beforeBegin',insertHTML);
+        elem.insertAdjacentHTML('afterEnd','<div class="row" id="imagelist"></div>');
+    });
+    //$('div.tab-content div:first').show();
+    $(document).on('click','a.insertimage',function() {
+        var imageinserttarget = $(this).parent().find('textarea');
+        $('#imageinserttarget').html(imageinserttarget.attr('id'));
+        $('#imageInsertModal').modal();
+        console.log($(this).next());
+        showImageList(1);
+    });
+    $(document).on('click','a.preview',function() {
+        var previewtarget = $(this).parent().find('textarea');
+        $('#previewModalBody').html(marked(previewtarget.val()));
+        $('#previewModal').modal();
+    });
+    $(document).on('click','#addTranslation',function(){
+        $('#addTranslationModal').modal();
+    });
+    $(document).on('click','a.imagepagination',function(){
+        var page = $(this).text();
+        showImageList(page);
+    });
+    $(document).on('click','a.thumbnail',function(){
+        var imageinserttarget = $('#imageinserttarget').text();
+        var image_source = $(this).find('img').attr('src');
+        var image_id = $(this).find('img').attr('id');
+        image_source = image_source.replace(/=s[0-9]+/,'=s320');
+        var image_title = $(this).find('h5').text();
+        console.log(image_source);
+        console.log(image_title);
+        var insert_text = '\n\n!['+image_title+']('+image_source+')<!-- do not remove "image_id:'+image_id+'"-->';
+        //$('#'+imageinserttarget).val($('#'+imageinserttarget).val()+insert_text);
+        $('#'+imageinserttarget).insertAtCaret(insert_text);
+    });
+    function showImageList(page){
+        $('#images').html('');
+        $.getJSON('/admin/image/list/json/?page='+page, function (result) {
+            var pages = result.total_pages;
+            var current_page = result.current_page;
+            var pagination_html ='<div><ul class="pagination">';
+            for(var p=1;p<=pages;p++){
+                //write pagination logic here
+                if(p == page){var li_class='active';}else{var li_class=''}
+                pagination_html += '<li class="'+li_class+'"><a href="javascript:void(0);" class="imagepagination">'+p+'</a></li>';
+            }
+            pagination_html +='</ul>';
+            $('#pagination').html(pagination_html);
+            var uploaded_images = result.images;
+            for(var i =0; i < uploaded_images.length; i++){
+                var temp_html = '<div class="col-sm-6 col-md-3">';
+                temp_html += '<a href="#" class="thumbnail"><img src="'+uploaded_images[i].image_path+'=s134" id="'+uploaded_images[i].id+'">';
+                temp_html += '<h5>'+uploaded_images[i].title+'</h5></a>';
+                temp_html += '</div>';
+                $('#images').append(temp_html);
+            }
+        });
+    }
+    $(document).on('click','#addTranslationTab',function(){
+        var lang = $('#langList option:selected').val();
+        subAddTranslation(lang);
+        $('#addTranslationModal').modal('hide');
+        $('#'+lang+'Tab').tab('show');
+    });
+    function subAddTranslation(lang){
+        var copy_source = $('div.tab-content div:first').html();
+        copy_source = '<div class="tab-pane" id="'+lang+'Tab">'+copy_source+'</div>';
+        copy_source = copy_source.replace(/("f_)/g,function (whole,s1) {return(s1 +lang+"_");});
+        var langName = $('#langList option[value='+lang+']').text();
+        var tab_source ='<li><a href="#'+lang+'Tab" data-toggle="tab">'+langName+'</a></li>';
+        document.querySelector('div.tab-content').insertAdjacentHTML('beforeEnd',copy_source);
+        var update_source = '<a class="createTranslation btn btn-large btn-block btn-primary" type="submit">{{_('Save')}}</a>';
+        update_source += '<a class="deleteTranslation btn btn-large btn-block btn-danger" type="submit">{{_('Delete')}}</a>';
+        update_source += '<input type="hidden" name="lang" id="f_lang" value="'+lang+'">';
+        $('#'+lang+'Tab div.form-actions').html(update_source);
+        document.querySelector('#addTranslationNode').insertAdjacentHTML('beforeBegin',tab_source);
+    }
+    $(document).on('shown','a[data-toggle="tab"]',function (e) {
+        e.target // activated tab
+        e.relatedTarget // previous tab
+    });
+    $(document).on('click','a.createTranslation',function(){
+        var $form = $(this).closest('form');
+        var params = $form.serializeArray();
+        var postParams = {};
+        var parentKey = $('#entityKey').text();
+        for(var i=0;i<params.length;i++){
+            if(params[i].name != '_csrf_token'){
+                postParams[params[i].name] = params[i].value;
+            }
+        }
+        var modelName = $('#modelName').text();
+        console.log(postParams);
+        var that = this;
+        $.ajax({
+            type: "POST",
+            url: "/admin/add/translation/"+parentKey,
+            data: postParams,
+            success: function(data) {
+                console.log(data);
+                $(that).closest('div').before('<div class="alert alert-success">{{_('Add translation success')}}</div>');
+            }
+        });
+    });
+    $(document).on('click','a.deleteTranslation',function(){
+        var modelName = $('#modelName').text();
+        var thisTab = $(this).closest('div.tab-pane');
+        var childKey = $(thisTab).find('span.childKey').text();
+        console.log(childKey);
+        $.ajax({
+            type:"DELETE",
+            url:"/admin/rest/"+modelName+"/"+childKey,
+            dataType: "json",
+            contentType: "application/json",
+            success: function(data){
+                $(thisTab).remove();
+            }
+        });
+    });
+    $(document).ready(function() {
+        $('textarea').css('max-height',($(window).height()-200)+'px');
+        $('textarea').expanding();
+        $('.form_datetime').datetimepicker({
+                    format: "yyyy-mm-dd hh:ii"
+        });
+        var modelName = $('#modelName').text();
+        var url = location.href;
+        var key = url.match(/update\/.+$/);
+        if(key){
+            key = key.toString().replace(/update\//,'');
+            key = key.toString().replace(/#.+$/,'');
+            console.log(key);
+            $('#entityKey').html(key);
+        }
+        if(key === null){
+            $('#addTranslationNode').css('display','none');
+            return;
+        }
+        $.ajax({
+            type:"GET",
+            url:"/admin/get/children/"+key,
+            success: function(data){
+                console.log(data);
+                var children = data.split(';');
+                if(children[0] == ""){return true;}
+                for(var i=0;i<children.length;i++){
+                    $.ajax({
+                        type:"GET",
+                        url:"/admin/rest/"+modelName+"/"+children[i],
+                        dataType: "json",
+                        contentType: "application/json",
+                        success: function(json_data){
+                            console.log(json_data);
+                            var entity =json_data[modelName]; 
+                            var lang = entity['lang'];
+                            console.log(lang);
+                            subAddTranslation(lang);
+                            var langTabId = lang+'Tab';
+                            var $form = $('#'+langTabId + ' form');
+                            var params = $form.serializeArray();
+                            for(var j=0;j<params.length;j++){
+                                var paramName = params[j].name;
+                                var formType = $form.find("[name="+paramName+"]").attr('type');
+                                console.log(formType);
+                                if(formType == 'checkbox'){
+                                    $form.find("[name="+paramName+"]").attr('checked',entity[paramName]);
+                                }else{
+                                    $form.find("[name="+paramName+"]").val(entity[paramName]);
+                                }
+                            }
+                            $form.append('<span class="childKey" style="display:none;">'+entity['key']+'</div>');
+                        }
+                    });
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
+        image_source = image_source.replace(/=s¥d+60/,'=s320');

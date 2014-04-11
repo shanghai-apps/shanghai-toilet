@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>{%block title %}{% endblock %}Kay Bootstrap,Kay Framework x Bootstrap</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="{%block description %}{% endblock %}">
+        {% if page and page.first_image %}<meta property="og:image" content="{{page.first_image}}" />{% endif %}
+        <meta name="author" content="">
+        <link rel="alternate" type="application/rss+xml" title="RSS" href="{{url_for('mainapp/rss_feed')}}" />
+
+        <!-- Le styles -->
+        <link href="/media/css/bootstrap.min.css" rel="stylesheet">
+        <style type="text/css">
+            /* Move down content because we have a fixed navbar that is 50px tall */
+            body {
+                padding-top: 62px;
+                padding-bottom: 20px;
+            }
+        </style>
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+        <script src="../../assets/js/html5shiv.js"></script>
+        <script src="../../assets/js/respond.min.js"></script>
+        <![endif]-->
+
+        {#
+        <!-- Fav and touch icons -->
+        <link rel="apple-touch-icon-precomposed" sizes="144x144" href="../assets/ico/apple-touch-icon-144-precomposed.png">
+        <link rel="apple-touch-icon-precomposed" sizes="114x114" href="../assets/ico/apple-touch-icon-114-precomposed.png">
+        <link rel="apple-touch-icon-precomposed" sizes="72x72" href="../assets/ico/apple-touch-icon-72-precomposed.png">
+        <link rel="apple-touch-icon-precomposed" href="../assets/ico/apple-touch-icon-57-precomposed.png">
+        <link rel="shortcut icon" href="../assets/ico/favicon.png">
+        #}
+    </head>
+    <body>
+        <div class="navbar navbar-default navbar-fixed-top">
+            <div class="container">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="/">KayBootstrap</a>
+                </div>
+                <div class="navbar-collapse collapse">
+                    <ul class="nav navbar-nav">
+                        <li><a href="/article/">{{_('News')}}</a></li>
+                        <li><a href="#">{{_('Popular')}}</a></li>
+                        <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{_('Directory')}}<b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">Action</a></li>
+                            <li><a href="#">Another action</a></li>
+                            <li><a href="#">Something else here</a></li>
+                            <li class="divider"></li>
+                            <li class="dropdown-header">Nav header</li>
+                            <li><a href="#">Separated link</a></li>
+                            <li><a href="#">One more separated link</a></li>
+                        </ul>
+                        </li>
+                    </ul>
+                    <form class="navbar-form navbar-left" id="navBarSearch" action="{{url_for('mainapp/search_by_keyword')}}">
+                        <div class="form-group">
+                            <input type="search" name="keyword" placeholder="{{_('input keyword')}}" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-search"></span></button>
+                    </form>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span><b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            {% for lang in lang_list %}
+                            <li><a href="{{create_lang_url(lang=lang['code'])}}">{{lang['name']}}</a></li>
+                            {% endfor %}
+                        </ul>
+                        </li>
+                    </ul>
+                    {% if request.user.is_admin %}
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="active"><a href="/admin/"><i class="icon-wrench icon-white"></i>{{_('Admin')}}</a></li>
+                    </ul>
+                    {% endif %}
+                </div><!--/.navbar-collapse -->
+            </div>
+        </div>
+        {#<div class="navbar navbar-inverse navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container">
+                    <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </a>
+                    <a class="brand" href="/">Kay Bootstrap</a>
+                    <div class="nav-collapse collapse">
+                        <ul class="nav">
+                            <li><a href="/article/">{{_('News')}}</a></li>
+                            <li><a href="#">{{_('Popular')}}</a></li>
+                            <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{_('Directory')}}<b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="#">Action</a></li>
+                                <li><a href="#">Another action</a></li>
+                                <li><a href="#">Something else here</a></li>
+                                <li class="divider"></li>
+                                <li class="nav-header">Nav header</li>
+                                <li><a href="#">Separated link</a></li>
+                                <li><a href="#">One more separated link</a></li>
+                            </ul>
+                            </li>
+                        </ul>
+                        <form class="navbar-form pull-left" id="navBarSearch" action="{{url_for('mainapp/search_by_keyword')}}">
+                            <input class="search-query" type="text" name="keyword" placeholder="{{_('input keyword')}}">
+                            <button class="btn"><i class="icon-search"></i></button>
+                        </form>
+                        <ul class="nav pull-right">
+                            <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{_('Language')}}<b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+                                {% for lang in lang_list %}
+                                <li><a href="{{create_lang_url(lang=lang['code'])}}">{{lang['name']}}</a></li>
+                                {% endfor %}
+                            </ul>
+                            </li>
+                        </ul>
+                        {% if request.user.is_admin %}
+                        <ul class="nav pull-right">
+                            <li class="active"><a href="/admin/"><i class="icon-wrench icon-white"></i>{{_('Admin')}}</a></li>
+                        </ul>
+                        {% endif %}
+                    </div><!--/.nav-collapse -->
+                </div>
+            </div>
+        </div>
+        #}
+        <div class="container">
+            {%block content%}{% endblock %}
+            <hr>
+        </div> <!-- /container -->
+        <footer>
+            <div class="container">
+                <div class="row" style="min-height:125px;">
+                    <p>
+                    <div class="fb-like" data-href="{{request.url}}" data-send="false" data-width="300" data-show-faces="false"></div>
+                    </p>
+                    <p>
+                    <a href="https://twitter.com/share" class="twitter-share-button" data-lang="ja">ツイート</a>
+                    </p>
+                    <p>
+                    <div class="g-plusone" data-size="tall" data-annotation="inline" data-width="300"></div>
+                    </p>
+                </div>
+                <p>
+                    &copy; Company 2013
+                    &middot;<a href="/about/">{{_('About')}}</a>
+                    &middot;<a href="/contact/">{{_('Contact')}}</a>
+                </p>
+            </div>
+        </footer>
+        <!-- Le javascript
+    ================================================== -->
+        <!-- Placed at the end of the document so the pages load faster -->
+        <script src="/media/js/jquery.min.js"></script>
+        <script src="/media/js/bootstrap.min.js"></script>
+        <script>
+            $(document).ready(function(){
+                $('#navBarSearch').on('submit',function(){
+                    var searchKeyword = $(".search-query").val();
+                    if(searchKeyword == ''){
+                        alert('{{_('Please input keyword')}}');
+                        return false;
+                    }
+                });
+            });
+        </script>
+        <div id="fb-root"></div>
+        <script>
+            (function(d, s, id) {
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) return;
+                js = d.createElement(s); js.id = id;
+                js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=551781848179574";
+                fjs.parentNode.insertBefore(js, fjs);
+            }(document, 'script', 'facebook-jssdk'));
+            !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
+            (function() {
+                var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+                po.src = 'https://apis.google.com/js/plusone.js';
+                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+            })();
+        </script>
+        {%block scripts%}{% endblock %}
+        {% if request.user.is_admin == False %}
+        <script type="text/javascript">
+
+          var _gaq = _gaq || [];
+          _gaq.push(['_setAccount', 'UA-38221851-1']);//replace this id
+          _gaq.push(['_trackPageview']);
+
+          (function() {
+            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+          })();
+
+        </script>
+        {% endif %}
+    </body>
+</html>
